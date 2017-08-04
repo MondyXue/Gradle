@@ -1,0 +1,76 @@
+import groovy.transform.Field
+
+apply plugin: 'maven'
+
+@Field private Properties mMavenProperties
+
+def getMavenProperties() {
+    if (mMavenProperties == null) {
+        mMavenProperties = new Properties()
+        mMavenProperties.load(file('maven_deploy.properties').newDataInputStream())
+    }
+    return mMavenProperties
+}
+
+afterEvaluate { project ->
+
+    uploadArchives {
+        repositories {
+            mavenDeployer {
+
+                repository(url: mavenProperties['repository.url']) {
+                    authentication(userName: mavenProperties['repository.authentication.userName'], password: mavenProperties['repository.authentication.password'])
+                }
+                snapshotRepository(url: mavenProperties['snapshotRepository.url']) {
+                    authentication(userName: mavenProperties['snapshotRepository.authentication.userName'], password: mavenProperties['snapshotRepository.authentication.password'])
+                }
+
+                pom.groupId = mavenProperties['pom.groupId']
+                pom.artifactId = mavenProperties['pom.artifactId']
+                pom.version = mavenProperties['pom.version']
+
+
+                pom.project {
+
+                    packaging mavenProperties['pom.packaging']
+
+                    name mavenProperties['pom.name']
+                    description mavenProperties['pom.description']
+                    url mavenProperties['pom.url']
+
+                    developers {
+                        developer {
+                            id mavenProperties['pom.developer.id']
+                            name mavenProperties['pom.developer.name']
+                        }
+                    }
+
+                    scm {
+                        url mavenProperties['pom.scm.url']
+                        connection mavenProperties['pom.scm.connection']
+                        developerConnection mavenProperties['pom.scm.developerConnection']
+                    }
+
+                    licenses {
+                        license {
+                            name mavenProperties['pom.license.name']
+                            url mavenProperties['pom.license.url']
+                            distribution mavenProperties['pom.license.distribution']
+                        }
+                    }
+
+                }
+            }
+        }
+    }
+
+    task androidSourcesJar(type: Jar) {
+        classifier = 'sources'
+        from android.sourceSets.main.java.sourceFiles
+    }
+
+    artifacts {
+        archives androidSourcesJar
+    }
+
+}
